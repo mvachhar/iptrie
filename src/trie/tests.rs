@@ -120,7 +120,7 @@ fn oracle_v4_lookup(prefixes: &[Ipv4Prefix], addr: &Ipv4Addr) -> Ipv4Prefix {
 #[test]
 fn ipv4_tries() {
     bolero::check!()
-        .with_generator(Ipv4PrefixOpGenerator { max_ops: 7 })
+        .with_generator(Ipv4PrefixOpGenerator { max_ops: 100 })
         .with_test_time(std::time::Duration::from_secs(10))
         .for_each(|ops| {
             let mut prefixes = Vec::new();
@@ -134,10 +134,7 @@ fn ipv4_tries() {
                         trie.insert(*prefix);
                     }
                     Op::Remove(prefix) => {
-                        let idx = prefixes.iter().position(|p| p == prefix);
-                        if let Some(idx) = idx {
-                            prefixes.remove(idx);
-                        }
+                        prefixes.retain(|p| p != prefix);
                         trie.remove(prefix);
                     }
                     Op::Lookup(addr) => {
