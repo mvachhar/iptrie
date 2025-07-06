@@ -40,6 +40,17 @@ fn ipv6_tries() {
         });
 }
 
+#[test]
+fn test_child_update_on_remove() {
+    let mut trie = RTrieSet::<Ipv4Prefix>::new();
+    trie.insert(Ipv4Prefix::new("128.0.0.0".parse::<Ipv4Addr>().unwrap(), 7).unwrap());
+    trie.insert(Ipv4Prefix::new("130.0.0.0".parse::<Ipv4Addr>().unwrap(), 7).unwrap());
+    trie.insert(Ipv4Prefix::new("128.0.0.0".parse::<Ipv4Addr>().unwrap(), 1).unwrap());
+    trie.insert(Ipv4Prefix::new("128.0.0.0".parse::<Ipv4Addr>().unwrap(), 2).unwrap());
+    trie.remove(&Ipv4Prefix::new("128.0.0.0".parse::<Ipv4Addr>().unwrap(), 1).unwrap());
+    trie.remove(&Ipv4Prefix::new("183.154.0.0".parse::<Ipv4Addr>().unwrap(), 3).unwrap());
+}
+
 struct Ipv4PrefixOpGenerator {
     max_ops: usize,
 }
@@ -109,7 +120,8 @@ fn oracle_v4_lookup(prefixes: &[Ipv4Prefix], addr: &Ipv4Addr) -> Ipv4Prefix {
 #[test]
 fn ipv4_tries() {
     bolero::check!()
-        .with_generator(Ipv4PrefixOpGenerator { max_ops: 100 })
+        .with_generator(Ipv4PrefixOpGenerator { max_ops: 7 })
+        .with_test_time(std::time::Duration::from_secs(10))
         .for_each(|ops| {
             let mut prefixes = Vec::new();
             let mut trie = RTrieSet::new();

@@ -190,6 +190,8 @@ impl<K:IpPrefix,V> RadixTrie<K,V>
             if self[bb].child[1] == lastleaf { self[bb].child[1] = l.into(); }
             while self[bb].escape == lastleaf {
                 self[bb].escape = l;
+                if self[bb].child[0] == lastleaf { self[bb].child[0] = l.into(); }
+                if self[bb].child[1] == lastleaf { self[bb].child[1] = l.into(); }
                 bb = self[bb].parent; // climb up the escape chain
             }
             // effective removal of the leaf
