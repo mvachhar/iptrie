@@ -51,6 +51,19 @@ fn test_child_update_on_remove() {
     trie.remove(&Ipv4Prefix::new("183.154.0.0".parse::<Ipv4Addr>().unwrap(), 3).unwrap());
 }
 
+#[test]
+fn test_remove_with_child_update() {
+    let mut trie = RTrieSet::<Ipv4Prefix>::new();
+    trie.insert(Ipv4Prefix::new("24.0.0.0".parse::<Ipv4Addr>().unwrap(), 5).unwrap());
+    trie.insert(Ipv4Prefix::new("40.0.0.0".parse::<Ipv4Addr>().unwrap(), 5).unwrap());
+    trie.insert(Ipv4Prefix::new("32.0.0.0".parse::<Ipv4Addr>().unwrap(), 5).unwrap());
+    trie.insert(Ipv4Prefix::new("0.0.0.0".parse::<Ipv4Addr>().unwrap(), 1).unwrap());
+    trie.remove(&Ipv4Prefix::new("24.0.0.0".parse::<Ipv4Addr>().unwrap(), 5).unwrap());
+    trie.insert(Ipv4Prefix::new("32.0.0.0".parse::<Ipv4Addr>().unwrap(), 4).unwrap());
+}
+
+
+
 struct Ipv4PrefixOpGenerator {
     max_ops: usize,
 }

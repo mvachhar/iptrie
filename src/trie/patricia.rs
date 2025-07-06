@@ -188,11 +188,33 @@ impl<K:IpPrefix,V> RadixTrie<K,V>
             //debug_assert_eq!( dbg!(self[lastleaf]).len(), dbg!(self[_ll]).len() );
             if self[bb].child[0] == lastleaf { self[bb].child[0] = l.into(); }
             if self[bb].child[1] == lastleaf { self[bb].child[1] = l.into(); }
+            let bb_orig = bb;
+            let bb_escape_matches_lastleaf = self[bb].escape == lastleaf;
             while self[bb].escape == lastleaf {
                 self[bb].escape = l;
                 if self[bb].child[0] == lastleaf { self[bb].child[0] = l.into(); }
                 if self[bb].child[1] == lastleaf { self[bb].child[1] = l.into(); }
                 bb = self[bb].parent; // climb up the escape chain
+            }
+            bb = bb_orig;
+            let mut stack = vec![bb];
+            if bb_escape_matches_lastleaf {
+                loop {
+                    if self[bb].escape == lastleaf || (bb == bb_orig && bb_escape_matches_lastleaf) {
+                        self[bb].escape = l;
+                        for i in 0..=1 {
+                            let child_index = self[bb].child[i];
+                            if child_index.is_branching() {
+                                self[BranchingIndex::from(child_index)].escape = l;
+                                stack.push(child_index.into());
+                            }
+                        }
+                    }
+                    bb = match stack.pop() {
+                        Some(b) => b,
+                        None => break,
+                    };
+                }
             }
             // effective removal of the leaf
             let removed = self.leaves.0.swap_remove(l.index());
