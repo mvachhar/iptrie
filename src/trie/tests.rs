@@ -62,7 +62,34 @@ fn test_remove_with_child_update() {
     trie.insert(Ipv4Prefix::new("32.0.0.0".parse::<Ipv4Addr>().unwrap(), 4).unwrap());
 }
 
+#[test]
+fn test_dual_child_update_on_remove() {
+    let mut trie = RTrieSet::<Ipv4Prefix>::new();
+    trie.insert(Ipv4Prefix::new("24.0.0.0".parse::<Ipv4Addr>().unwrap(), 5).unwrap());
+    trie.insert(Ipv4Prefix::new("0.0.0.0".parse::<Ipv4Addr>().unwrap(), 4).unwrap());
+    trie.insert(Ipv4Prefix::new("40.0.0.0".parse::<Ipv4Addr>().unwrap(), 5).unwrap());
+    trie.insert(Ipv4Prefix::new("32.0.0.0".parse::<Ipv4Addr>().unwrap(), 5).unwrap());
+    trie.insert(Ipv4Prefix::new("0.0.0.0".parse::<Ipv4Addr>().unwrap(), 1).unwrap());
+    trie.remove(&Ipv4Prefix::new("24.0.0.0".parse::<Ipv4Addr>().unwrap(), 5).unwrap());
+    trie.insert(Ipv4Prefix::new("32.0.0.0".parse::<Ipv4Addr>().unwrap(), 3).unwrap());
+}
 
+#[cfg(feature = "graphviz")]
+use crate::graphviz::DotWriter;
+
+#[cfg(feature = "graphviz")]
+#[test]
+fn test_blah() {
+    let mut trie = RTrieSet::<Ipv4Prefix>::new();
+    trie.insert(Ipv4Prefix::new("64.0.0.0".parse::<Ipv4Addr>().unwrap(), 2).unwrap());
+    trie.insert(Ipv4Prefix::new("96.0.0.0".parse::<Ipv4Addr>().unwrap(), 3).unwrap());
+    trie.generate_pdf_file(Some("before-remove.pdf")).expect("can’t generate PDF file");
+    trie.remove(&Ipv4Prefix::new("64.0.0.0".parse::<Ipv4Addr>().unwrap(), 2).unwrap());
+    trie.generate_pdf_file(Some("after-remove.pdf")).expect("can’t generate PDF file");
+    trie.insert(Ipv4Prefix::new("0.0.0.0".parse::<Ipv4Addr>().unwrap(), 1).unwrap());
+    trie.generate_pdf_file(Some("before-last-insert.pdf")).expect("can’t generate PDF file");
+    trie.insert(Ipv4Prefix::new("0.0.0.0".parse::<Ipv4Addr>().unwrap(), 2).unwrap());
+}
 
 struct Ipv4PrefixOpGenerator {
     max_ops: usize,

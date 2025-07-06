@@ -135,6 +135,27 @@ impl<K:IpPrefix,V> RadixTrie<K,V>
     }
 }
 
+fn rewrite_escape_chain<K,V>(trie: &mut RadixTrie<K,V>, bb_in: BranchingIndex, lastleaf: LeafIndex, l: LeafIndex) {
+    let mut bb = bb_in;
+    let mut stack = vec![bb];
+    loop {
+        bb = match stack.pop() {
+            Some(b) => b,
+            None => break,
+        };
+        if trie[bb].escape == lastleaf {
+            trie[bb].escape = l;
+            for i in 0..=1 {
+                let child_index = trie[bb].child[i];
+                if child_index == lastleaf { trie[bb].child[i] = l.into(); }
+                else if child_index.is_branching() {
+                    stack.push(child_index.into());
+                }
+            }
+        }
+    }
+}
+
 impl<K:IpPrefix,V> RadixTrie<K,V>
 {
     pub fn get<Q>(&self, k: &Q) -> Option<(&K,&V)>
@@ -186,36 +207,15 @@ impl<K:IpPrefix,V> RadixTrie<K,V>
             let lastleaf = LeafIndex::from(self.leaves.len()-1);
             let (mut bb,_) = self.inner_lookup(&self[lastleaf]);
             //debug_assert_eq!( dbg!(self[lastleaf]).len(), dbg!(self[_ll]).len() );
+            let mut last_escape_match = bb;
             if self[bb].child[0] == lastleaf { self[bb].child[0] = l.into(); }
             if self[bb].child[1] == lastleaf { self[bb].child[1] = l.into(); }
-            let bb_orig = bb;
-            let bb_escape_matches_lastleaf = self[bb].escape == lastleaf;
             while self[bb].escape == lastleaf {
-                self[bb].escape = l;
-                if self[bb].child[0] == lastleaf { self[bb].child[0] = l.into(); }
-                if self[bb].child[1] == lastleaf { self[bb].child[1] = l.into(); }
+                last_escape_match = bb;
                 bb = self[bb].parent; // climb up the escape chain
             }
-            bb = bb_orig;
-            let mut stack = vec![bb];
-            if bb_escape_matches_lastleaf {
-                loop {
-                    if self[bb].escape == lastleaf || (bb == bb_orig && bb_escape_matches_lastleaf) {
-                        self[bb].escape = l;
-                        for i in 0..=1 {
-                            let child_index = self[bb].child[i];
-                            if child_index.is_branching() {
-                                self[BranchingIndex::from(child_index)].escape = l;
-                                stack.push(child_index.into());
-                            }
-                        }
-                    }
-                    bb = match stack.pop() {
-                        Some(b) => b,
-                        None => break,
-                    };
-                }
-            }
+            rewrite_escape_chain(self, last_escape_match, lastleaf, l);
+
             // effective removal of the leaf
             let removed = self.leaves.0.swap_remove(l.index());
             Some(<Leaf<K,V> as Into<(K,V)>>::into(removed).1)
